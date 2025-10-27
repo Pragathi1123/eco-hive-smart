@@ -88,6 +88,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <Button
         variant="ghost"
         className="justify-start"
+        onClick={() => navigate("/dashboard/leaderboard")}
+      >
+        <Award className="mr-2 h-4 w-4" />
+        Leaderboard
+      </Button>
+      <Button
+        variant="ghost"
+        className="justify-start"
         onClick={() => navigate("/dashboard/education")}
       >
         <BookOpen className="mr-2 h-4 w-4" />
