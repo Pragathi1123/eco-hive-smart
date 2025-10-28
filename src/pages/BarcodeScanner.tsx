@@ -32,24 +32,48 @@ const BarcodeScanner = () => {
         await stopScanning();
       }
 
+      // Clear the reader div
+      const readerElement = document.getElementById("reader");
+      if (readerElement) {
+        readerElement.innerHTML = "";
+      }
+
       const scanner = new Html5Qrcode("reader");
       scannerRef.current = scanner;
 
+      // Show scanning state immediately
+      setScanning(true);
+
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { 
+          fps: 10, 
+          qrbox: { width: 300, height: 300 },
+          aspectRatio: 1.0
+        },
         async (decodedText) => {
+          console.log("Barcode detected:", decodedText);
           setLoading(true);
           await stopScanning();
           await fetchProductInfo(decodedText);
         },
-        () => {}
+        (errorMessage) => {
+          // This is called for every frame where no code is detected - ignore
+        }
       );
-      setScanning(true);
+      
       toast.success("Camera started! Point at a barcode to scan.");
-    } catch (err) {
-      toast.error("Failed to access camera. Please grant camera permissions.");
-      console.error(err);
+    } catch (err: any) {
+      console.error("Scanner error:", err);
+      setScanning(false);
+      
+      if (err.name === "NotAllowedError") {
+        toast.error("Camera permission denied. Please allow camera access and try again.");
+      } else if (err.name === "NotFoundError") {
+        toast.error("No camera found on this device.");
+      } else {
+        toast.error("Failed to start camera. Please check permissions and try again.");
+      }
     }
   };
 
@@ -191,32 +215,48 @@ const BarcodeScanner = () => {
           <CardHeader>
             <CardTitle>Barcode Scanner</CardTitle>
             <CardDescription>
-              Point your camera at a product barcode to scan
+              {scanning 
+                ? "Point your camera at a barcode - it will scan automatically" 
+                : "Click Start Scanning to open the camera"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div
-              id="reader"
-              className={`w-full ${scanning ? "block" : "hidden"} rounded-lg overflow-hidden`}
-            />
+            {/* Camera preview container */}
+            <div className={`${scanning ? "block" : "hidden"}`}>
+              <div
+                id="reader"
+                className="w-full min-h-[400px] rounded-lg overflow-hidden border-2 border-primary bg-black"
+              />
+            </div>
+
+            {/* Instruction when not scanning */}
+            {!scanning && !loading && !productInfo && (
+              <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                <Scan className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-center text-muted-foreground">
+                  Start scanning to use your camera for barcode detection
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-4">
               {!scanning ? (
-                <Button onClick={startScanning} className="w-full">
-                  <Scan className="mr-2 h-4 w-4" />
-                  Start Scanning
+                <Button onClick={startScanning} className="w-full" size="lg">
+                  <Scan className="mr-2 h-5 w-5" />
+                  Start Camera Scanner
                 </Button>
               ) : (
-                <Button onClick={stopScanning} variant="destructive" className="w-full">
-                  <X className="mr-2 h-4 w-4" />
-                  Stop Scanning
+                <Button onClick={stopScanning} variant="destructive" className="w-full" size="lg">
+                  <X className="mr-2 h-5 w-5" />
+                  Stop Camera
                 </Button>
               )}
             </div>
 
             {loading && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Processing barcode...</p>
               </div>
             )}
           </CardContent>
