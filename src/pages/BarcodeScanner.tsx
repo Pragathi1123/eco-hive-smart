@@ -3,16 +3,19 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Scan, X, Loader2 } from "lucide-react";
+import { Scan, X, Loader2, Upload, Camera } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
 
 interface ProductInfo {
   name: string;
   description: string;
   recyclability: string;
   category: string;
-  barcode: string;
+  barcode?: string;
+  confidence?: number;
 }
 
 const BarcodeScanner = () => {
@@ -20,9 +23,15 @@ const BarcodeScanner = () => {
   const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startScanning = async () => {
     try {
+      // Stop any existing scanner first
+      if (scannerRef.current) {
+        await stopScanning();
+      }
+
       const scanner = new Html5Qrcode("reader");
       scannerRef.current = scanner;
 
@@ -37,6 +46,7 @@ const BarcodeScanner = () => {
         () => {}
       );
       setScanning(true);
+      toast.success("Camera started! Point at a barcode to scan.");
     } catch (err) {
       toast.error("Failed to access camera. Please grant camera permissions.");
       console.error(err);
@@ -106,6 +116,59 @@ const BarcodeScanner = () => {
     return "E-Waste - Special Handling Required";
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        
+        // Call edge function for waste detection
+        const { data, error } = await supabase.functions.invoke("detect-waste", {
+          body: { imageBase64: base64String },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        setProductInfo({
+          name: data.category + " Waste",
+          description: data.description,
+          recyclability: data.recyclability === "recyclable" 
+            ? "Recyclable" 
+            : data.recyclability === "special-handling" 
+            ? "Special Handling Required" 
+            : "Non-Recyclable",
+          category: data.category,
+          confidence: data.confidence,
+        });
+        
+        toast.success("Image analyzed successfully!");
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      toast.error("Failed to analyze image. Please try again.");
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
@@ -126,7 +189,7 @@ const BarcodeScanner = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Scanner</CardTitle>
+            <CardTitle>Barcode Scanner</CardTitle>
             <CardDescription>
               Point your camera at a product barcode to scan
             </CardDescription>
@@ -159,17 +222,65 @@ const BarcodeScanner = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Waste Detection</CardTitle>
+            <CardDescription>
+              Upload or capture a photo to identify waste type
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                onClick={handleCameraCapture} 
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Take Photo
+              </Button>
+              
+              <Button 
+                onClick={() => fileInputRef.current?.click()} 
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Photo
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {productInfo && !loading && (
           <Card>
             <CardHeader>
-              <CardTitle>Product Information</CardTitle>
+              <CardTitle>Item Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <h3 className="font-semibold text-lg">{productInfo.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Barcode: {productInfo.barcode}
-                </p>
+                {productInfo.barcode && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Barcode: {productInfo.barcode}
+                  </p>
+                )}
+                {productInfo.confidence && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Confidence: {productInfo.confidence}%
+                  </p>
+                )}
               </div>
 
               <div>

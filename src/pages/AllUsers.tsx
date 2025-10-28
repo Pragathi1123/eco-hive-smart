@@ -24,6 +24,7 @@ const AllUsers = () => {
 
   const fetchUsers = async () => {
     try {
+      // Fetch all profiles - RLS policy allows viewing all users
       const { data, error } = await supabase
         .from("profiles")
         .select("id, email, full_name, created_at")
