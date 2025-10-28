@@ -9,6 +9,10 @@ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Achievements from "./pages/Achievements";
 import Leaderboard from "./pages/Leaderboard";
+import BarcodeScanner from "./pages/BarcodeScanner";
+import ArduinoWeight from "./pages/ArduinoWeight";
+import Education from "./pages/Education";
+import AllUsers from "./pages/AllUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +30,10 @@ const App = () => (
           <Route path="/dashboard/analytics" element={<Analytics />} />
           <Route path="/dashboard/achievements" element={<Achievements />} />
           <Route path="/dashboard/leaderboard" element={<Leaderboard />} />
+          <Route path="/dashboard/barcode-scanner" element={<BarcodeScanner />} />
+          <Route path="/dashboard/arduino-weight" element={<ArduinoWeight />} />
+          <Route path="/dashboard/education" element={<Education />} />
+          <Route path="/dashboard/all-users" element={<AllUsers />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

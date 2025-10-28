@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Leaf, Home, BarChart3, Award, BookOpen, LogOut, Menu } from "lucide-react";
+import { Leaf, Home, BarChart3, Award, BookOpen, LogOut, Menu, Scan, Scale, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -100,6 +100,30 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <BookOpen className="mr-2 h-4 w-4" />
         Learn
+      </Button>
+      <Button
+        variant="ghost"
+        className="justify-start"
+        onClick={() => navigate("/dashboard/barcode-scanner")}
+      >
+        <Scan className="mr-2 h-4 w-4" />
+        Barcode Scanner
+      </Button>
+      <Button
+        variant="ghost"
+        className="justify-start"
+        onClick={() => navigate("/dashboard/arduino-weight")}
+      >
+        <Scale className="mr-2 h-4 w-4" />
+        Weight Sensor
+      </Button>
+      <Button
+        variant="ghost"
+        className="justify-start"
+        onClick={() => navigate("/dashboard/all-users")}
+      >
+        <Users className="mr-2 h-4 w-4" />
+        All Users
       </Button>
     </nav>
   );
