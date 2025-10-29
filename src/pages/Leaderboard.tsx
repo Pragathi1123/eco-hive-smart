@@ -17,6 +17,7 @@ interface LeaderboardEntry {
   total_weight_kg: number;
   total_carbon_saved_kg: number;
   current_streak_days: number;
+  accuracy_score?: number;
 }
 
 const Leaderboard = () => {
@@ -26,6 +27,7 @@ const Leaderboard = () => {
   const [leaderboardByWeight, setLeaderboardByWeight] = useState<LeaderboardEntry[]>([]);
   const [leaderboardByCarbon, setLeaderboardByCarbon] = useState<LeaderboardEntry[]>([]);
   const [leaderboardByStreak, setLeaderboardByStreak] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardByAccuracy, setLeaderboardByAccuracy] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -47,6 +49,7 @@ const Leaderboard = () => {
           total_weight_kg,
           total_carbon_saved_kg,
           current_streak_days,
+          accuracy_score,
           profiles (full_name, email)
         `)
         .order("total_points", { ascending: false });
@@ -62,6 +65,7 @@ const Leaderboard = () => {
         total_weight_kg: stat.total_weight_kg || 0,
         total_carbon_saved_kg: stat.total_carbon_saved_kg || 0,
         current_streak_days: stat.current_streak_days || 0,
+        accuracy_score: stat.accuracy_score || 0,
         rank: 0,
       })) || [];
 
@@ -82,10 +86,15 @@ const Leaderboard = () => {
         .sort((a, b) => b.current_streak_days - a.current_streak_days)
         .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
+      const byAccuracy = [...processedData]
+        .sort((a, b) => (b.accuracy_score || 0) - (a.accuracy_score || 0))
+        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+
       setLeaderboardByPoints(byPoints);
       setLeaderboardByWeight(byWeight);
       setLeaderboardByCarbon(byCarbon);
       setLeaderboardByStreak(byStreak);
+      setLeaderboardByAccuracy(byAccuracy);
     } catch (error: any) {
       toast.error("Failed to load leaderboard");
     } finally {
@@ -171,7 +180,7 @@ const Leaderboard = () => {
         </div>
 
         <Tabs defaultValue="points" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="points" className="gap-2">
               <Trophy className="h-4 w-4" />
               Points
@@ -187,6 +196,10 @@ const Leaderboard = () => {
             <TabsTrigger value="streak" className="gap-2">
               <Zap className="h-4 w-4" />
               Streak
+            </TabsTrigger>
+            <TabsTrigger value="accuracy" className="gap-2">
+              <Trophy className="h-4 w-4" />
+              Accuracy
             </TabsTrigger>
           </TabsList>
 
@@ -234,6 +247,18 @@ const Leaderboard = () => {
               </CardHeader>
               <CardContent>
                 {renderLeaderboardTable(leaderboardByStreak, "current_streak_days", "days streak")}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="accuracy">
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Classification Accuracy</CardTitle>
+                <CardDescription>Users ranked by waste classification accuracy</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderLeaderboardTable(leaderboardByAccuracy, "accuracy_score", "% accuracy")}
               </CardContent>
             </Card>
           </TabsContent>

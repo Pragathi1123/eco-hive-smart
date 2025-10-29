@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input";
 interface ProductInfo {
   name: string;
   description: string;
-  recyclability: string;
   category: string;
+  subcategory?: string;
   barcode?: string;
   confidence?: number;
+  correctAnswer?: string;
 }
 
 const BarcodeScanner = () => {
@@ -98,21 +99,24 @@ const BarcodeScanner = () => {
 
       if (data.status === 1 && data.product) {
         const product = data.product;
+        const category = determineCategory(product);
         setProductInfo({
           name: product.product_name || "Unknown Product",
           description: product.generic_name || product.categories || "No description available",
-          recyclability: determineRecyclability(product),
-          category: product.categories_tags?.[0]?.replace("en:", "") || "Electronic",
+          category: category,
+          subcategory: product.categories_tags?.[0]?.replace("en:", "") || "Unknown",
           barcode: barcode,
+          correctAnswer: category,
         });
       } else {
         // Fallback for electronics/unknown items
         setProductInfo({
           name: "Electronic Item",
           description: "Electronic waste item detected. Please dispose of properly at designated e-waste collection points.",
-          recyclability: "E-Waste - Special Handling Required",
-          category: "Electronic",
+          category: "E-Waste",
+          subcategory: "Electronic Device",
           barcode: barcode,
+          correctAnswer: "E-Waste",
         });
       }
       toast.success("Product scanned successfully!");
@@ -121,23 +125,31 @@ const BarcodeScanner = () => {
       setProductInfo({
         name: "Unknown Item",
         description: "Could not retrieve product information. Barcode: " + barcode,
-        recyclability: "Unknown - Please consult local recycling guidelines",
-        category: "Unknown",
+        category: "E-Waste",
+        subcategory: "Unknown",
         barcode: barcode,
+        correctAnswer: "E-Waste",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const determineRecyclability = (product: any): string => {
+  const determineCategory = (product: any): string => {
     const packaging = product.packaging_tags || [];
-    if (packaging.some((p: string) => p.includes("recyclable"))) {
-      return "Recyclable";
-    } else if (packaging.some((p: string) => p.includes("plastic"))) {
-      return "Check Local Guidelines - Plastic";
+    const categories = product.categories_tags || [];
+    
+    // Check if it's food/organic
+    if (categories.some((c: string) => c.includes("food") || c.includes("organic"))) {
+      return "Compostable";
     }
-    return "E-Waste - Special Handling Required";
+    
+    // Check if recyclable packaging
+    if (packaging.some((p: string) => p.includes("recyclable") || p.includes("plastic") || p.includes("paper") || p.includes("metal") || p.includes("glass"))) {
+      return "Recyclable";
+    }
+    
+    return "E-Waste";
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,15 +173,12 @@ const BarcodeScanner = () => {
         }
 
         setProductInfo({
-          name: data.category + " Waste",
+          name: data.subcategory || data.category,
           description: data.description,
-          recyclability: data.recyclability === "recyclable" 
-            ? "Recyclable" 
-            : data.recyclability === "special-handling" 
-            ? "Special Handling Required" 
-            : "Non-Recyclable",
           category: data.category,
+          subcategory: data.subcategory,
           confidence: data.confidence,
+          correctAnswer: data.correctAnswer,
         });
         
         toast.success("Image analyzed successfully!");
@@ -190,6 +199,43 @@ const BarcodeScanner = () => {
   const handleCameraCapture = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleConfirmClassification = async (confirmedCategory: string) => {
+    if (!productInfo) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please log in to track your accuracy");
+        return;
+      }
+
+      const isCorrect = confirmedCategory === productInfo.correctAnswer;
+
+      const { error } = await supabase.from("classification_logs").insert({
+        user_id: user.id,
+        item_name: productInfo.name,
+        detected_category: productInfo.category,
+        user_confirmed_category: confirmedCategory,
+        is_correct: isCorrect,
+        confidence: productInfo.confidence,
+        barcode: productInfo.barcode,
+      });
+
+      if (error) throw error;
+
+      toast.success(
+        isCorrect
+          ? "Correct! +10 points for accurate classification"
+          : `Incorrect. The correct category was ${productInfo.correctAnswer}`
+      );
+
+      setProductInfo(null);
+    } catch (error) {
+      console.error("Error logging classification:", error);
+      toast.error("Failed to log classification");
     }
   };
 
@@ -330,15 +376,42 @@ const BarcodeScanner = () => {
 
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">{productInfo.category}</Badge>
-                <Badge
-                  variant={
-                    productInfo.recyclability.includes("Recyclable")
-                      ? "default"
-                      : "destructive"
-                  }
-                >
-                  {productInfo.recyclability}
-                </Badge>
+                {productInfo.subcategory && (
+                  <Badge variant="outline">{productInfo.subcategory}</Badge>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Confirm Classification:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    onClick={() => handleConfirmClassification("Recyclable")}
+                    variant={productInfo.category === "Recyclable" ? "default" : "outline"}
+                    size="sm"
+                    className="w-full"
+                  >
+                    Recyclable
+                  </Button>
+                  <Button
+                    onClick={() => handleConfirmClassification("Compostable")}
+                    variant={productInfo.category === "Compostable" ? "default" : "outline"}
+                    size="sm"
+                    className="w-full"
+                  >
+                    Compostable
+                  </Button>
+                  <Button
+                    onClick={() => handleConfirmClassification("E-Waste")}
+                    variant={productInfo.category === "E-Waste" ? "default" : "outline"}
+                    size="sm"
+                    className="w-full"
+                  >
+                    E-Waste
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Confirm the correct category to earn accuracy points
+                </p>
               </div>
 
               <Button

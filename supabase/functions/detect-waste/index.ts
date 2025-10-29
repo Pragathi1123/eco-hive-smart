@@ -28,15 +28,26 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           {
-            role: "system",
-            content: "You are a waste classification expert. Analyze the image and identify the type of waste. Return ONLY a JSON object with: category (one of: Plastic, Organic, Paper, Textile, E-Waste, Hazardous), confidence (0-100), description (brief 1-2 sentence description), and recyclability (recyclable/non-recyclable/special-handling)."
-          },
-          {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "What type of waste is in this image? Classify it into one of these categories: Plastic, Organic, Paper, Textile, E-Waste, or Hazardous."
+                text: `You are a waste classification expert. Analyze the image and classify the waste item.
+Return ONLY a valid JSON object with these exact fields:
+{
+  "category": "MUST be exactly one of: Recyclable, Compostable, E-Waste",
+  "subcategory": "specific type (e.g., Plastic Bottle, Food Waste, Electronics)",
+  "confidence": "percentage 0-100 as a number",
+  "description": "brief description with disposal instructions",
+  "correctAnswer": "same as category - used for accuracy tracking"
+}
+
+Classification rules:
+- Recyclable: plastic, paper, metal, glass containers and packaging
+- Compostable: food waste, organic materials, biodegradable items
+- E-Waste: electronics, batteries, electronic components, appliances
+
+Be accurate and provide clear disposal guidance.`
               },
               {
                 type: "image_url",
