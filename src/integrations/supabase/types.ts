@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      classification_logs: {
+        Row: {
+          barcode: string | null
+          confidence: number | null
+          created_at: string
+          detected_category: string
+          id: string
+          is_correct: boolean | null
+          item_name: string
+          user_confirmed_category: string | null
+          user_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          confidence?: number | null
+          created_at?: string
+          detected_category: string
+          id?: string
+          is_correct?: boolean | null
+          item_name: string
+          user_confirmed_category?: string | null
+          user_id: string
+        }
+        Update: {
+          barcode?: string | null
+          confidence?: number | null
+          created_at?: string
+          detected_category?: string
+          id?: string
+          is_correct?: boolean | null
+          item_name?: string
+          user_confirmed_category?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -112,30 +148,39 @@ export type Database = {
       }
       user_stats: {
         Row: {
+          accuracy_score: number | null
+          correct_classifications: number | null
           current_streak_days: number | null
           last_log_date: string | null
           longest_streak_days: number | null
           total_carbon_saved_kg: number | null
+          total_classifications: number | null
           total_points: number | null
           total_weight_kg: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          accuracy_score?: number | null
+          correct_classifications?: number | null
           current_streak_days?: number | null
           last_log_date?: string | null
           longest_streak_days?: number | null
           total_carbon_saved_kg?: number | null
+          total_classifications?: number | null
           total_points?: number | null
           total_weight_kg?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          accuracy_score?: number | null
+          correct_classifications?: number | null
           current_streak_days?: number | null
           last_log_date?: string | null
           longest_streak_days?: number | null
           total_carbon_saved_kg?: number | null
+          total_classifications?: number | null
           total_points?: number | null
           total_weight_kg?: number | null
           updated_at?: string
