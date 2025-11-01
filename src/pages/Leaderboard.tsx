@@ -35,10 +35,9 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
+      // Try to get user, but don't fail if not logged in
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      setCurrentUserId(user.id);
+      setCurrentUserId(user?.id || "");
 
       // Fetch all users' stats with their profile info
       const { data: stats, error } = await supabase
@@ -69,26 +68,31 @@ const Leaderboard = () => {
         rank: 0,
       })) || [];
 
-      // Sort and rank by different metrics
+      // Sort and rank by different metrics (highest to lowest), show top 50
       const byPoints = [...processedData]
         .sort((a, b) => b.total_points - a.total_points)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        .slice(0, 50);
 
       const byWeight = [...processedData]
         .sort((a, b) => b.total_weight_kg - a.total_weight_kg)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        .slice(0, 50);
 
       const byCarbon = [...processedData]
         .sort((a, b) => b.total_carbon_saved_kg - a.total_carbon_saved_kg)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        .slice(0, 50);
 
       const byStreak = [...processedData]
         .sort((a, b) => b.current_streak_days - a.current_streak_days)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        .slice(0, 50);
 
       const byAccuracy = [...processedData]
         .sort((a, b) => (b.accuracy_score || 0) - (a.accuracy_score || 0))
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        .slice(0, 50);
 
       setLeaderboardByPoints(byPoints);
       setLeaderboardByWeight(byWeight);
@@ -126,7 +130,7 @@ const Leaderboard = () => {
 
   const renderLeaderboardTable = (data: LeaderboardEntry[], valueKey: keyof LeaderboardEntry, label: string) => (
     <div className="space-y-2">
-      {data.slice(0, 50).map((entry) => (
+      {data.map((entry) => (
         <Card
           key={entry.user_id}
           className={entry.user_id === currentUserId ? "border-primary bg-primary/5" : ""}

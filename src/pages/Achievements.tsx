@@ -200,37 +200,54 @@ const Achievements = () => {
           <div>
             <h2 className="text-2xl font-semibold mb-4">Locked Achievements</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {lockedAchievements.map((achievement) => (
-                <Card key={achievement.id} className="opacity-75">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-2xl relative">
-                          <Lock className="h-5 w-5 absolute text-muted-foreground" />
-                          <span className="opacity-30">{achievement.icon}</span>
-                        </div>
-                        <div>
-                          <CardTitle className="text-base">{achievement.name}</CardTitle>
-                          <Badge variant="outline" className="mt-1">
-                            <Award className="h-3 w-3 mr-1" />
-                            {achievement.points} pts
-                          </Badge>
+              {lockedAchievements.map((achievement) => {
+                const progress = getProgress(achievement);
+                const isComplete = progress >= 100;
+                
+                return (
+                  <Card 
+                    key={achievement.id} 
+                    className={isComplete ? "border-primary/50 bg-gradient-to-br from-primary/5 to-transparent" : "opacity-75"}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl relative ${
+                            isComplete ? "bg-gradient-primary" : "bg-muted"
+                          }`}>
+                            {!isComplete && (
+                              <Lock className="h-5 w-5 absolute text-muted-foreground" />
+                            )}
+                            <span className={isComplete ? "" : "opacity-30"}>{achievement.icon}</span>
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">{achievement.name}</CardTitle>
+                            <Badge variant={isComplete ? "secondary" : "outline"} className="mt-1">
+                              <Award className="h-3 w-3 mr-1" />
+                              {achievement.points} pts
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>{achievement.description}</CardDescription>
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                        <span>Progress</span>
-                        <span>{getProgress(achievement).toFixed(0)}%</span>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription>{achievement.description}</CardDescription>
+                      {isComplete && (
+                        <Badge variant="default" className="mt-2 bg-gradient-primary">
+                          🎉 100% Complete - Ready to Claim!
+                        </Badge>
+                      )}
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                          <span>Progress</span>
+                          <span>{progress.toFixed(0)}%</span>
+                        </div>
+                        <Progress value={progress} />
                       </div>
-                      <Progress value={getProgress(achievement)} />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}
