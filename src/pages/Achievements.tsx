@@ -4,8 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Award, Lock } from "lucide-react";
+import goldMedal from "@/assets/gold-medal.png";
+import silverMedal from "@/assets/silver-medal.png";
+import bronzeMedal from "@/assets/bronze-medal.png";
 
 interface Achievement {
   id: string;
@@ -26,7 +30,32 @@ const Achievements = () => {
 
   useEffect(() => {
     fetchAchievements();
+    checkAchievements();
   }, []);
+
+  const checkAchievements = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('check-achievements', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.newlyEarned && data.newlyEarned.length > 0) {
+        data.newlyEarned.forEach((achievement: any) => {
+          toast.success(`🏆 Achievement Unlocked: ${achievement.name}! +${achievement.points} points`);
+        });
+        fetchAchievements();
+      }
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+    }
+  };
 
   const fetchAchievements = async () => {
     try {
@@ -102,6 +131,12 @@ const Achievements = () => {
     return Math.min((current / achievement.requirement_value) * 100, 100);
   };
 
+  const getMedalImage = (points: number) => {
+    if (points >= 100) return goldMedal;
+    if (points >= 50) return silverMedal;
+    return bronzeMedal;
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -170,8 +205,15 @@ const Achievements = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-2xl">
-                          {achievement.icon}
+                        <div className="relative">
+                          <img 
+                            src={getMedalImage(achievement.points)} 
+                            alt="Achievement Medal" 
+                            className="h-16 w-16 object-contain"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                            {achievement.icon}
+                          </div>
                         </div>
                         <div>
                           <CardTitle className="text-base">{achievement.name}</CardTitle>
@@ -212,13 +254,24 @@ const Achievements = () => {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl relative ${
-                            isComplete ? "bg-gradient-primary" : "bg-muted"
-                          }`}>
-                            {!isComplete && (
-                              <Lock className="h-5 w-5 absolute text-muted-foreground" />
+                          <div className="relative">
+                            {isComplete ? (
+                              <>
+                                <img 
+                                  src={getMedalImage(achievement.points)} 
+                                  alt="Achievement Medal" 
+                                  className="h-16 w-16 object-contain"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                                  {achievement.icon}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center relative">
+                                <Lock className="h-5 w-5 absolute text-muted-foreground" />
+                                <span className="opacity-30 text-2xl">{achievement.icon}</span>
+                              </div>
                             )}
-                            <span className={isComplete ? "" : "opacity-30"}>{achievement.icon}</span>
                           </div>
                           <div>
                             <CardTitle className="text-base">{achievement.name}</CardTitle>

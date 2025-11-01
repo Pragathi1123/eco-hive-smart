@@ -8,6 +8,9 @@ import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import recyclableImage from "@/assets/recyclable-waste.png";
+import compostableImage from "@/assets/compostable-waste.png";
+import ewasteImage from "@/assets/ewaste.png";
 
 interface ProductInfo {
   name: string;
@@ -226,11 +229,27 @@ const BarcodeScanner = () => {
 
       if (error) throw error;
 
-      toast.success(
-        isCorrect
-          ? "Correct! +10 points for accurate classification"
-          : `Incorrect. The correct category was ${productInfo.correctAnswer}`
-      );
+      if (isCorrect) {
+        toast.success("Correct! +10 points for accurate classification");
+        
+        // Check for new achievements
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data } = await supabase.functions.invoke('check-achievements', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+          
+          if (data?.newlyEarned && data.newlyEarned.length > 0) {
+            data.newlyEarned.forEach((achievement: any) => {
+              toast.success(`🏆 Achievement Unlocked: ${achievement.name}! +${achievement.points} points`);
+            });
+          }
+        }
+      } else {
+        toast.error(`Incorrect. The correct category was ${productInfo.correctAnswer}`);
+      }
 
       setProductInfo(null);
     } catch (error) {
@@ -355,6 +374,19 @@ const BarcodeScanner = () => {
               <CardTitle>Item Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Category Image */}
+              <div className="flex justify-center">
+                <img 
+                  src={
+                    productInfo.category === "Recyclable" ? recyclableImage :
+                    productInfo.category === "Compostable" ? compostableImage :
+                    ewasteImage
+                  }
+                  alt={productInfo.category}
+                  className="h-48 w-48 object-cover rounded-lg shadow-lg"
+                />
+              </div>
+
               <div>
                 <h3 className="font-semibold text-lg">{productInfo.name}</h3>
                 {productInfo.barcode && (
