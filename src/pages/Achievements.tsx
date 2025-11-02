@@ -51,10 +51,19 @@ const Achievements = () => {
           toast.success(`🏆 Achievement Unlocked: ${achievement.name}! +${achievement.points} points`);
         });
         fetchAchievements();
+      } else {
+        toast.info('No achievements ready to claim yet. Keep going!');
       }
     } catch (error) {
       console.error('Error checking achievements:', error);
+      toast.error('Failed to check achievements');
     }
+  };
+
+  const claimAchievement = async () => {
+    setLoading(true);
+    await checkAchievements();
+    setLoading(false);
   };
 
   const fetchAchievements = async () => {
@@ -286,9 +295,20 @@ const Achievements = () => {
                     <CardContent>
                       <CardDescription>{achievement.description}</CardDescription>
                       {isComplete && (
-                        <Badge variant="default" className="mt-2 bg-gradient-primary">
-                          🎉 100% Complete - Ready to Claim!
-                        </Badge>
+                        <div className="mt-3 space-y-2">
+                          <Badge variant="default" className="w-full justify-center bg-gradient-primary">
+                            🎉 100% Complete - Ready to Claim!
+                          </Badge>
+                          <Button 
+                            onClick={claimAchievement}
+                            disabled={loading}
+                            className="w-full"
+                            size="sm"
+                          >
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Claim Reward (+{achievement.points} pts)
+                          </Button>
+                        </div>
                       )}
                       <div className="mt-4">
                         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
