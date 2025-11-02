@@ -32,38 +32,6 @@ const Achievements = () => {
     fetchAchievements();
   }, []);
 
-  const claimAchievement = async () => {
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Please log in to claim rewards');
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('check-achievements', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.newlyEarned && data.newlyEarned.length > 0) {
-        data.newlyEarned.forEach((achievement: any) => {
-          toast.success(`🏆 Achievement Unlocked: ${achievement.name}! +${achievement.points} points`);
-        });
-        fetchAchievements();
-      } else {
-        toast.info('No achievements ready to claim yet. Keep going!');
-      }
-    } catch (error) {
-      console.error('Error claiming achievement:', error);
-      toast.error('Failed to claim achievement');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchAchievements = async () => {
     try {
@@ -294,20 +262,9 @@ const Achievements = () => {
                     <CardContent>
                       <CardDescription>{achievement.description}</CardDescription>
                       {isComplete && (
-                        <div className="mt-3 space-y-2">
-                          <Badge variant="default" className="w-full justify-center bg-gradient-primary">
-                            🎉 100% Complete - Ready to Claim!
-                          </Badge>
-                          <Button 
-                            onClick={claimAchievement}
-                            disabled={loading}
-                            className="w-full"
-                            size="sm"
-                          >
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                            Claim Reward (+{achievement.points} pts)
-                          </Button>
-                        </div>
+                        <Badge variant="default" className="mt-2 bg-gradient-primary w-full justify-center">
+                          🎉 100% Complete!
+                        </Badge>
                       )}
                       <div className="mt-4">
                         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
