@@ -181,16 +181,11 @@ const Achievements = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <img 
-                            src={getMedalImage(achievement.points)} 
-                            alt="" 
-                            className="h-16 w-16 object-contain"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center text-2xl">
-                            {achievement.icon}
-                          </div>
-                        </div>
+                        <img 
+                          src={getMedalImage(achievement.points)} 
+                          alt="" 
+                          className="h-16 w-16 object-contain"
+                        />
                         <div>
                           <CardTitle className="text-base">{achievement.name}</CardTitle>
                           <Badge variant="secondary" className="mt-1">
@@ -230,25 +225,17 @@ const Achievements = () => {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="relative">
-                            {isComplete ? (
-                              <>
-                                <img 
-                                  src={getMedalImage(achievement.points)} 
-                                  alt="" 
-                                  className="h-16 w-16 object-contain"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center text-2xl">
-                                  {achievement.icon}
-                                </div>
-                              </>
-                            ) : (
-                              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center relative">
-                                <Lock className="h-5 w-5 absolute text-muted-foreground" />
-                                <span className="opacity-30 text-2xl">{achievement.icon}</span>
-                              </div>
-                            )}
-                          </div>
+                          {isComplete ? (
+                            <img 
+                              src={getMedalImage(achievement.points)} 
+                              alt="" 
+                              className="h-16 w-16 object-contain"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                              <Lock className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
                           <div>
                             <CardTitle className="text-base">{achievement.name}</CardTitle>
                             <Badge variant={isComplete ? "secondary" : "outline"} className="mt-1">
