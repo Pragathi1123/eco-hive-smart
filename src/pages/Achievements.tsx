@@ -30,13 +30,16 @@ const Achievements = () => {
 
   useEffect(() => {
     fetchAchievements();
-    checkAchievements();
   }, []);
 
-  const checkAchievements = async () => {
+  const claimAchievement = async () => {
+    setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        toast.error('Please log in to claim rewards');
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('check-achievements', {
         headers: {
@@ -55,15 +58,11 @@ const Achievements = () => {
         toast.info('No achievements ready to claim yet. Keep going!');
       }
     } catch (error) {
-      console.error('Error checking achievements:', error);
-      toast.error('Failed to check achievements');
+      console.error('Error claiming achievement:', error);
+      toast.error('Failed to claim achievement');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const claimAchievement = async () => {
-    setLoading(true);
-    await checkAchievements();
-    setLoading(false);
   };
 
   const fetchAchievements = async () => {

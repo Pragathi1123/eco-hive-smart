@@ -231,22 +231,6 @@ const BarcodeScanner = () => {
 
       if (isCorrect) {
         toast.success("Correct! +10 points for accurate classification");
-        
-        // Check for new achievements
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data } = await supabase.functions.invoke('check-achievements', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          });
-          
-          if (data?.newlyEarned && data.newlyEarned.length > 0) {
-            data.newlyEarned.forEach((achievement: any) => {
-              toast.success(`🏆 Achievement Unlocked: ${achievement.name}! +${achievement.points} points`);
-            });
-          }
-        }
       } else {
         toast.error(`Incorrect. The correct category was ${productInfo.correctAnswer}`);
       }
