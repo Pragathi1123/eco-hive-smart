@@ -26,6 +26,7 @@ const BarcodeScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,6 +166,7 @@ const BarcodeScanner = () => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
+        setUploadedImage(base64String); // Store the uploaded image
         
         // Call edge function for waste detection
         const { data, error } = await supabase.functions.invoke("detect-waste", {
@@ -191,6 +193,7 @@ const BarcodeScanner = () => {
     } catch (error) {
       console.error("Error analyzing image:", error);
       toast.error("Failed to analyze image. Please try again.");
+      setUploadedImage(null);
     } finally {
       setLoading(false);
       if (fileInputRef.current) {
@@ -236,6 +239,7 @@ const BarcodeScanner = () => {
       }
 
       setProductInfo(null);
+      setUploadedImage(null);
     } catch (error) {
       console.error("Error logging classification:", error);
       toast.error("Failed to log classification");
@@ -358,18 +362,16 @@ const BarcodeScanner = () => {
               <CardTitle>Item Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Category Image */}
-              <div className="flex justify-center">
-                <img 
-                  src={
-                    productInfo.category === "Recyclable" ? recyclableImage :
-                    productInfo.category === "Compostable" ? compostableImage :
-                    ewasteImage
-                  }
-                  alt={productInfo.category}
-                  className="h-48 w-48 object-cover rounded-lg shadow-lg"
-                />
-              </div>
+              {/* Display the uploaded image */}
+              {uploadedImage && (
+                <div className="flex justify-center">
+                  <img 
+                    src={uploadedImage}
+                    alt="Scanned item"
+                    className="h-64 w-full object-contain rounded-lg shadow-lg"
+                  />
+                </div>
+              )}
 
               <div>
                 <h3 className="font-semibold text-lg">{productInfo.name}</h3>
@@ -431,7 +433,10 @@ const BarcodeScanner = () => {
               </div>
 
               <Button
-                onClick={() => setProductInfo(null)}
+                onClick={() => {
+                  setProductInfo(null);
+                  setUploadedImage(null);
+                }}
                 variant="outline"
                 className="w-full"
               >
