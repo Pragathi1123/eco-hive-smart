@@ -208,7 +208,7 @@ const Achievements = () => {
                         <div className="relative">
                           <img 
                             src={getMedalImage(achievement.points)} 
-                            alt="Achievement Medal" 
+                            alt="" 
                             className="h-16 w-16 object-contain"
                           />
                           <div className="absolute inset-0 flex items-center justify-center text-2xl">
@@ -259,7 +259,7 @@ const Achievements = () => {
                               <>
                                 <img 
                                   src={getMedalImage(achievement.points)} 
-                                  alt="Achievement Medal" 
+                                  alt="" 
                                   className="h-16 w-16 object-contain"
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center text-2xl">
