@@ -31,6 +31,36 @@ const BarcodeScanner = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const generateScanningImage = async () => {
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: "A photorealistic image showing waste segregation bins with recyclable, compostable, and e-waste categories, modern clean design with green and blue colors, sustainability theme, ultra high resolution, 16:9 aspect ratio"
+            }
+          ],
+          modalities: ["image", "text"]
+        })
+      });
+
+      const data = await response.json();
+      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (imageUrl) {
+        setGeneratedImage(imageUrl);
+      }
+    } catch (error) {
+      console.error("Failed to generate scanning image:", error);
+    }
+  };
+
   const startScanning = async () => {
     try {
       // Stop any existing scanner first
@@ -49,6 +79,9 @@ const BarcodeScanner = () => {
 
       // Show scanning state immediately
       setScanning(true);
+      
+      // Generate AI image for scanning context
+      generateScanningImage();
 
       await scanner.start(
         { facingMode: "environment" },
@@ -322,6 +355,17 @@ const BarcodeScanner = () => {
                 className="w-full min-h-[400px] rounded-lg overflow-hidden border-2 border-primary bg-black"
               />
             </div>
+
+            {/* Show AI image when scanning */}
+            {scanning && generatedImage && (
+              <div className="flex justify-center mb-4">
+                <img 
+                  src={generatedImage}
+                  alt="Waste segregation guide"
+                  className="h-48 w-full object-contain rounded-lg shadow-lg"
+                />
+              </div>
+            )}
 
             {/* Instruction when not scanning */}
             {!scanning && !loading && !productInfo && (
