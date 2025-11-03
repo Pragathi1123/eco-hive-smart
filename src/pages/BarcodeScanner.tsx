@@ -93,6 +93,7 @@ const BarcodeScanner = () => {
         async (decodedText) => {
           console.log("Barcode detected:", decodedText);
           setLoading(true);
+          setUploadedImage(null); // Clear uploaded image for barcode scans
           await stopScanning();
           await fetchProductInfo(decodedText);
         },
@@ -127,15 +128,18 @@ const BarcodeScanner = () => {
       }
     }
     setScanning(false);
+    setGeneratedImage(null); // Clear scanning guide image
   };
 
   const generateWasteImage = async (category: string) => {
     try {
       const prompts = {
-        "Recyclable": "A photorealistic image of clean recyclable waste items including plastic bottles, aluminum cans, paper, and cardboard in a recycling bin, bright and organized, ultra high resolution, 16:9 aspect ratio",
-        "Compostable": "A photorealistic image of organic compostable waste including fruit peels, vegetable scraps, and food waste in a compost bin, natural earthy colors, ultra high resolution, 16:9 aspect ratio",
-        "E-Waste": "A photorealistic image of electronic waste items including old phones, circuit boards, and electronic devices ready for proper disposal, tech aesthetic, ultra high resolution, 16:9 aspect ratio"
+        "Recyclable": "A photorealistic image of clean recyclable waste items including plastic bottles, aluminum cans, paper, and cardboard properly sorted in a blue recycling bin, bright clean environment, sustainability concept, ultra high resolution, 16:9 aspect ratio",
+        "Compostable": "A photorealistic image of organic compostable waste including fruit peels, vegetable scraps, and food waste in a brown compost bin, natural green environment, eco-friendly concept, ultra high resolution, 16:9 aspect ratio",
+        "E-Waste": "A photorealistic image of electronic waste items including old smartphones, circuit boards, and electronic devices in a designated e-waste collection bin, modern tech recycling facility, ultra high resolution, 16:9 aspect ratio"
       };
+
+      toast.info("Generating waste category image...");
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -159,9 +163,11 @@ const BarcodeScanner = () => {
       const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       if (imageUrl) {
         setGeneratedImage(imageUrl);
+        toast.success("Waste segregation complete with AI visualization!");
       }
     } catch (error) {
       console.error("Failed to generate image:", error);
+      toast.error("Failed to generate waste category image");
     }
   };
 
