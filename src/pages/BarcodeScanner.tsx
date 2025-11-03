@@ -131,43 +131,50 @@ const BarcodeScanner = () => {
     setGeneratedImage(null); // Clear scanning guide image
   };
 
-  const generateWasteImage = async (category: string) => {
+  const generateWasteImage = async (category: string, productName?: string, subcategory?: string) => {
     try {
-      const prompts = {
-        "Recyclable": "A photorealistic image of clean recyclable waste items including plastic bottles, aluminum cans, paper, and cardboard properly sorted in a blue recycling bin, bright clean environment, sustainability concept, ultra high resolution, 16:9 aspect ratio",
-        "Compostable": "A photorealistic image of organic compostable waste including fruit peels, vegetable scraps, and food waste in a brown compost bin, natural green environment, eco-friendly concept, ultra high resolution, 16:9 aspect ratio",
-        "E-Waste": "A photorealistic image of electronic waste items including old smartphones, circuit boards, and electronic devices in a designated e-waste collection bin, modern tech recycling facility, ultra high resolution, 16:9 aspect ratio"
+      const focusText = productName
+        ? `Focus on ${productName}${subcategory ? ` (${subcategory})` : ''}.`
+        : 'Focus on the specific item and its packaging.';
+
+      const prompts: Record<string, string> = {
+        Recyclable:
+          `${focusText} Photorealistic close-up showing the item/packaging being correctly placed into a BLUE recycling bin. Emphasize clean, empty, dry materials (plastic bottles, cans, paper, cardboard). Modern, bright environment, sustainability theme. Ultra high resolution, 16:9 aspect ratio`,
+        Compostable:
+          `${focusText} Photorealistic image of organic scraps being placed into a BROWN/GREEN compost bin. Show fruit peels, veggie scraps, coffee grounds. Natural garden setting, eco-friendly vibe. Ultra high resolution, 16:9 aspect ratio`,
+        'E-Waste':
+          `${focusText} Photorealistic image of an electronic device being deposited at a designated E-WASTE collection point (no regular bins). Modern tech recycling station. Ultra high resolution, 16:9 aspect ratio`,
       };
 
-      toast.info("Generating waste category image...");
+      toast.info('Generating product-specific AI image...');
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
+          model: 'google/gemini-2.5-flash-image-preview',
           messages: [
             {
-              role: "user",
-              content: prompts[category as keyof typeof prompts] || prompts["E-Waste"]
-            }
+              role: 'user',
+              content: prompts[category] || prompts['E-Waste'],
+            },
           ],
-          modalities: ["image", "text"]
-        })
+          modalities: ['image', 'text'],
+        }),
       });
 
       const data = await response.json();
       const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       if (imageUrl) {
         setGeneratedImage(imageUrl);
-        toast.success("Waste segregation complete with AI visualization!");
+        toast.success('AI image generated for this item');
       }
     } catch (error) {
-      console.error("Failed to generate image:", error);
-      toast.error("Failed to generate waste category image");
+      console.error('Failed to generate image:', error);
+      toast.error('Failed to generate waste category image');
     }
   };
 
@@ -180,15 +187,17 @@ const BarcodeScanner = () => {
       if (data.status === 1 && data.product) {
         const product = data.product;
         const category = determineCategory(product);
+        const name = product.product_name || product.brands || "Unknown Product";
+        const subcat = product.categories_tags?.[0]?.replace("en:", "") || "Unknown";
         setProductInfo({
-          name: product.product_name || "Unknown Product",
+          name: name,
           description: product.generic_name || product.categories || "No description available",
           category: category,
-          subcategory: product.categories_tags?.[0]?.replace("en:", "") || "Unknown",
+          subcategory: subcat,
           barcode: barcode,
           correctAnswer: category,
         });
-        await generateWasteImage(category);
+        await generateWasteImage(category, name, subcat);
       } else {
         // Fallback for electronics/unknown items
         setProductInfo({
@@ -199,7 +208,7 @@ const BarcodeScanner = () => {
           barcode: barcode,
           correctAnswer: "E-Waste",
         });
-        await generateWasteImage("E-Waste");
+        await generateWasteImage("E-Waste", "Electronic Item", "Electronic Device");
       }
       toast.success("Product scanned successfully!");
     } catch (error) {
@@ -212,7 +221,7 @@ const BarcodeScanner = () => {
         barcode: barcode,
         correctAnswer: "E-Waste",
       });
-      await generateWasteImage("E-Waste");
+      await generateWasteImage("E-Waste", "Unknown Item", "Unknown");
     } finally {
       setLoading(false);
     }
