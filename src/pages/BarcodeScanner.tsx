@@ -27,6 +27,7 @@ const BarcodeScanner = () => {
   const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +96,42 @@ const BarcodeScanner = () => {
     setScanning(false);
   };
 
+  const generateWasteImage = async (category: string) => {
+    try {
+      const prompts = {
+        "Recyclable": "A photorealistic image of clean recyclable waste items including plastic bottles, aluminum cans, paper, and cardboard in a recycling bin, bright and organized, ultra high resolution, 16:9 aspect ratio",
+        "Compostable": "A photorealistic image of organic compostable waste including fruit peels, vegetable scraps, and food waste in a compost bin, natural earthy colors, ultra high resolution, 16:9 aspect ratio",
+        "E-Waste": "A photorealistic image of electronic waste items including old phones, circuit boards, and electronic devices ready for proper disposal, tech aesthetic, ultra high resolution, 16:9 aspect ratio"
+      };
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: prompts[category as keyof typeof prompts] || prompts["E-Waste"]
+            }
+          ],
+          modalities: ["image", "text"]
+        })
+      });
+
+      const data = await response.json();
+      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (imageUrl) {
+        setGeneratedImage(imageUrl);
+      }
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+    }
+  };
+
   const fetchProductInfo = async (barcode: string) => {
     try {
       // Try Open Food Facts API first
@@ -112,6 +149,7 @@ const BarcodeScanner = () => {
           barcode: barcode,
           correctAnswer: category,
         });
+        await generateWasteImage(category);
       } else {
         // Fallback for electronics/unknown items
         setProductInfo({
@@ -122,6 +160,7 @@ const BarcodeScanner = () => {
           barcode: barcode,
           correctAnswer: "E-Waste",
         });
+        await generateWasteImage("E-Waste");
       }
       toast.success("Product scanned successfully!");
     } catch (error) {
@@ -134,6 +173,7 @@ const BarcodeScanner = () => {
         barcode: barcode,
         correctAnswer: "E-Waste",
       });
+      await generateWasteImage("E-Waste");
     } finally {
       setLoading(false);
     }
@@ -240,6 +280,7 @@ const BarcodeScanner = () => {
 
       setProductInfo(null);
       setUploadedImage(null);
+      setGeneratedImage(null);
     } catch (error) {
       console.error("Error logging classification:", error);
       toast.error("Failed to log classification");
@@ -362,11 +403,11 @@ const BarcodeScanner = () => {
               <CardTitle>Item Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Display the uploaded image */}
-              {uploadedImage && (
+              {/* Display uploaded image for photo uploads or generated image for barcode scans */}
+              {(uploadedImage || generatedImage) && (
                 <div className="flex justify-center">
                   <img 
-                    src={uploadedImage}
+                    src={uploadedImage || generatedImage || ""}
                     alt="Scanned item"
                     className="h-64 w-full object-contain rounded-lg shadow-lg"
                   />
@@ -436,6 +477,7 @@ const BarcodeScanner = () => {
                 onClick={() => {
                   setProductInfo(null);
                   setUploadedImage(null);
+                  setGeneratedImage(null);
                 }}
                 variant="outline"
                 className="w-full"
