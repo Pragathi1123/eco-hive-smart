@@ -453,41 +453,47 @@ const BarcodeScanner = () => {
               <CardTitle>Item Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Display uploaded image for photo uploads or generated image for barcode scans */}
-              {(uploadedImage || generatedImage) && (
-                <div className="flex justify-center">
-                  <img 
-                    src={uploadedImage || generatedImage || ""}
-                    alt="Scanned item"
-                    className="h-64 w-full object-contain rounded-lg shadow-lg"
-                  />
+              {/* Side-by-side layout for image and information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Image section */}
+                {(uploadedImage || generatedImage) && (
+                  <div className="flex justify-center items-start">
+                    <img 
+                      src={uploadedImage || generatedImage || ""}
+                      alt="Scanned item"
+                      className="w-full h-64 object-contain rounded-lg shadow-lg"
+                    />
+                  </div>
+                )}
+
+                {/* Information section */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg">{productInfo.name}</h3>
+                    {productInfo.barcode && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Barcode: {productInfo.barcode}
+                      </p>
+                    )}
+                    {productInfo.confidence && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Confidence: {productInfo.confidence}%
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-1">Description</p>
+                    <p className="text-sm text-muted-foreground">{productInfo.description}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">{productInfo.category}</Badge>
+                    {productInfo.subcategory && (
+                      <Badge variant="outline">{productInfo.subcategory}</Badge>
+                    )}
+                  </div>
                 </div>
-              )}
-
-              <div>
-                <h3 className="font-semibold text-lg">{productInfo.name}</h3>
-                {productInfo.barcode && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Barcode: {productInfo.barcode}
-                  </p>
-                )}
-                {productInfo.confidence && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Confidence: {productInfo.confidence}%
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-sm font-medium mb-1">Description</p>
-                <p className="text-sm text-muted-foreground">{productInfo.description}</p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{productInfo.category}</Badge>
-                {productInfo.subcategory && (
-                  <Badge variant="outline">{productInfo.subcategory}</Badge>
-                )}
               </div>
 
               <div className="space-y-2">
