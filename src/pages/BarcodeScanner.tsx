@@ -122,8 +122,6 @@ const BarcodeScanner = () => {
 
   const generateWasteImage = async (category: string, productName?: string, subcategory?: string) => {
     try {
-      toast.info('Generating product-specific AI image...');
-
       const { data, error } = await supabase.functions.invoke("generate-waste-image", {
         body: { category, productName, subcategory },
       });
@@ -132,11 +130,9 @@ const BarcodeScanner = () => {
 
       if (data?.imageUrl) {
         setGeneratedImage(data.imageUrl);
-        toast.success('AI image generated for this item');
       }
     } catch (error) {
       console.error('Failed to generate image:', error);
-      toast.error('Failed to generate waste category image');
     }
   };
 
@@ -151,6 +147,10 @@ const BarcodeScanner = () => {
         const category = determineCategory(product);
         const name = product.product_name || product.brands || "Unknown Product";
         const subcat = product.categories_tags?.[0]?.replace("en:", "") || "Unknown";
+        
+        // Start generating image immediately without waiting
+        generateWasteImage(category, name, subcat);
+        
         setProductInfo({
           name: name,
           description: product.generic_name || product.categories || "No description available",
@@ -159,9 +159,10 @@ const BarcodeScanner = () => {
           barcode: barcode,
           correctAnswer: category,
         });
-        await generateWasteImage(category, name, subcat);
       } else {
         // Fallback for electronics/unknown items
+        generateWasteImage("E-Waste", "Electronic Item", "Electronic Device");
+        
         setProductInfo({
           name: "Electronic Item",
           description: "Electronic waste item detected. Please dispose of properly at designated e-waste collection points.",
@@ -170,11 +171,12 @@ const BarcodeScanner = () => {
           barcode: barcode,
           correctAnswer: "E-Waste",
         });
-        await generateWasteImage("E-Waste", "Electronic Item", "Electronic Device");
       }
       toast.success("Product scanned successfully!");
     } catch (error) {
       toast.error("Failed to fetch product information");
+      generateWasteImage("E-Waste", "Unknown Item", "Unknown");
+      
       setProductInfo({
         name: "Unknown Item",
         description: "Could not retrieve product information. Barcode: " + barcode,
@@ -183,7 +185,6 @@ const BarcodeScanner = () => {
         barcode: barcode,
         correctAnswer: "E-Waste",
       });
-      await generateWasteImage("E-Waste", "Unknown Item", "Unknown");
     } finally {
       setLoading(false);
     }
