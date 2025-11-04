@@ -33,28 +33,17 @@ const BarcodeScanner = () => {
 
   const generateScanningImage = async () => {
     try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          "Content-Type": "application/json",
+      const { data, error } = await supabase.functions.invoke("generate-waste-image", {
+        body: { 
+          category: "Recyclable",
+          productName: "Waste segregation bins",
+          subcategory: "General"
         },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: "A photorealistic image showing waste segregation bins with recyclable, compostable, and e-waste categories, modern clean design with green and blue colors, sustainability theme, ultra high resolution, 16:9 aspect ratio"
-            }
-          ],
-          modalities: ["image", "text"]
-        })
       });
 
-      const data = await response.json();
-      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      if (imageUrl) {
-        setGeneratedImage(imageUrl);
+      if (error) throw error;
+      if (data?.imageUrl) {
+        setGeneratedImage(data.imageUrl);
       }
     } catch (error) {
       console.error("Failed to generate scanning image:", error);
@@ -133,43 +122,16 @@ const BarcodeScanner = () => {
 
   const generateWasteImage = async (category: string, productName?: string, subcategory?: string) => {
     try {
-      const focusText = productName
-        ? `Focus on ${productName}${subcategory ? ` (${subcategory})` : ''}.`
-        : 'Focus on the specific item and its packaging.';
-
-      const prompts: Record<string, string> = {
-        Recyclable:
-          `${focusText} Photorealistic close-up showing the item/packaging being correctly placed into a BLUE recycling bin. Emphasize clean, empty, dry materials (plastic bottles, cans, paper, cardboard). Modern, bright environment, sustainability theme. Ultra high resolution, 16:9 aspect ratio`,
-        Compostable:
-          `${focusText} Photorealistic image of organic scraps being placed into a BROWN/GREEN compost bin. Show fruit peels, veggie scraps, coffee grounds. Natural garden setting, eco-friendly vibe. Ultra high resolution, 16:9 aspect ratio`,
-        'E-Waste':
-          `${focusText} Photorealistic image of an electronic device being deposited at a designated E-WASTE collection point (no regular bins). Modern tech recycling station. Ultra high resolution, 16:9 aspect ratio`,
-      };
-
       toast.info('Generating product-specific AI image...');
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [
-            {
-              role: 'user',
-              content: prompts[category] || prompts['E-Waste'],
-            },
-          ],
-          modalities: ['image', 'text'],
-        }),
+      const { data, error } = await supabase.functions.invoke("generate-waste-image", {
+        body: { category, productName, subcategory },
       });
 
-      const data = await response.json();
-      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      if (imageUrl) {
-        setGeneratedImage(imageUrl);
+      if (error) throw error;
+
+      if (data?.imageUrl) {
+        setGeneratedImage(data.imageUrl);
         toast.success('AI image generated for this item');
       }
     } catch (error) {
