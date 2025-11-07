@@ -145,6 +145,9 @@ const BarcodeScanner = () => {
         const name = product.product_name || product.brands || "Unknown Product";
         const subcat = product.categories_tags?.[0]?.replace("en:", "") || "Unknown";
         
+        // Generate image for the detected category
+        generateWasteImage(category, name, subcat);
+        
         setProductInfo({
           name: name,
           description: product.generic_name || product.categories || "No description available",
@@ -155,6 +158,8 @@ const BarcodeScanner = () => {
         });
       } else {
         // Fallback for electronics/unknown items
+        generateWasteImage("E-Waste", "Electronic Item", "Electronic Device");
+        
         setProductInfo({
           name: "Electronic Item",
           description: "Electronic waste item detected. Please dispose of properly at designated e-waste collection points.",
@@ -167,6 +172,8 @@ const BarcodeScanner = () => {
       toast.success("Product scanned successfully!");
     } catch (error) {
       toast.error("Failed to fetch product information");
+      generateWasteImage("E-Waste", "Unknown Item", "Unknown");
+      
       setProductInfo({
         name: "Unknown Item",
         description: "Could not retrieve product information. Barcode: " + barcode,
