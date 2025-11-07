@@ -69,12 +69,25 @@ const BarcodeScanner = () => {
       // Show scanning state immediately
       setScanning(true);
 
+      // Prefer the back camera when available
+      const devices = await Html5Qrcode.getCameras();
+      let cameraIdOrConstraints: any = { facingMode: "environment" };
+      if (devices && devices.length) {
+        const backCam = devices.find((d) => /back|rear|environment/i.test(d.label));
+        const chosen = backCam ?? devices[0];
+        cameraIdOrConstraints = chosen.id;
+      }
+
+      // Wider rectangular box improves 1D barcode detection
+      const viewportWidth = Math.min(window.innerWidth, 640);
+      const qrboxWidth = Math.floor(viewportWidth * 0.9);
+      const qrboxHeight = Math.floor(qrboxWidth * 0.4);
+
       await scanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 10, 
-          qrbox: { width: 300, height: 300 },
-          aspectRatio: 1.0,
+        cameraIdOrConstraints,
+        {
+          fps: 10,
+          qrbox: { width: qrboxWidth, height: qrboxHeight },
           formatsToSupport: [
             Html5QrcodeSupportedFormats.QR_CODE,
             Html5QrcodeSupportedFormats.EAN_13,
@@ -86,8 +99,8 @@ const BarcodeScanner = () => {
             Html5QrcodeSupportedFormats.ITF,
           ],
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
+            useBarCodeDetectorIfSupported: true,
+          },
         } as any,
         async (decodedText) => {
           console.log("Barcode detected:", decodedText);
@@ -97,7 +110,8 @@ const BarcodeScanner = () => {
           await fetchProductInfo(decodedText);
         },
         (errorMessage) => {
-          // This is called for every frame where no code is detected - ignore
+          // Frame where no code is detected
+          // console.debug("Scan frame no match:", errorMessage);
         }
       );
       
