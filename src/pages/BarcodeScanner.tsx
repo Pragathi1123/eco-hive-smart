@@ -20,6 +20,14 @@ interface ProductInfo {
   barcode?: string;
   confidence?: number;
   correctAnswer?: string;
+  insideWaste?: {
+    type: string;
+    classification: string;
+  };
+  packaging?: {
+    material: string;
+    disposal: string;
+  };
 }
 
 const BarcodeScanner = () => {
@@ -168,9 +176,17 @@ const BarcodeScanner = () => {
 
       if (data.status === 1 && data.product) {
         const product = data.product;
-        const category = determineCategory(product);
         const name = product.product_name || product.brands || "Unknown Product";
         const subcat = product.categories_tags?.[0]?.replace("en:", "") || "Unknown";
+        
+        // Determine inside waste type based on product categories
+        const insideWaste = determineInsideWaste(product);
+        
+        // Determine packaging material from Open Food Facts data
+        const packaging = determinePackaging(product);
+        
+        // The packaging determines the overall disposal category
+        const category = packaging.disposal;
         
         // Generate image for the detected category
         generateWasteImage(category, name, subcat);
@@ -182,6 +198,8 @@ const BarcodeScanner = () => {
           subcategory: subcat,
           barcode: barcode,
           correctAnswer: category,
+          insideWaste: insideWaste,
+          packaging: packaging,
         });
       } else {
         // Fallback for electronics/unknown items
@@ -194,6 +212,14 @@ const BarcodeScanner = () => {
           subcategory: "Electronic Device",
           barcode: barcode,
           correctAnswer: "E-Waste",
+          insideWaste: {
+            type: "Electronic Components",
+            classification: "Hazardous - E-Waste"
+          },
+          packaging: {
+            material: "Cardboard/Plastic",
+            disposal: "E-Waste"
+          }
         });
       }
       toast.success("Product scanned successfully!");
@@ -214,21 +240,71 @@ const BarcodeScanner = () => {
     }
   };
 
-  const determineCategory = (product: any): string => {
-    const packaging = product.packaging_tags || [];
+  const determineInsideWaste = (product: any): { type: string; classification: string } => {
     const categories = product.categories_tags || [];
+    const categoryStr = categories.join(" ").toLowerCase();
     
-    // Check if it's food/organic
-    if (categories.some((c: string) => c.includes("food") || c.includes("organic"))) {
-      return "Compostable";
+    // Food items are biodegradable/compostable
+    if (categoryStr.includes("snack") || categoryStr.includes("chip") || categoryStr.includes("crisp")) {
+      return { type: "Food waste (chips/snacks)", classification: "Biodegradable - Compostable" };
+    }
+    if (categoryStr.includes("beverage") || categoryStr.includes("drink") || categoryStr.includes("juice")) {
+      return { type: "Liquid residue", classification: "Pour out, rinse container" };
+    }
+    if (categoryStr.includes("food") || categoryStr.includes("meal") || categoryStr.includes("organic")) {
+      return { type: "Food waste", classification: "Biodegradable - Compostable" };
+    }
+    if (categoryStr.includes("dairy") || categoryStr.includes("milk") || categoryStr.includes("yogurt")) {
+      return { type: "Dairy product residue", classification: "Biodegradable - Compostable" };
+    }
+    if (categoryStr.includes("meat") || categoryStr.includes("fish") || categoryStr.includes("poultry")) {
+      return { type: "Meat/protein waste", classification: "Biodegradable - Special disposal" };
+    }
+    if (categoryStr.includes("fruit") || categoryStr.includes("vegetable")) {
+      return { type: "Produce waste", classification: "Biodegradable - Compostable" };
+    }
+    if (categoryStr.includes("candy") || categoryStr.includes("chocolate") || categoryStr.includes("sweet")) {
+      return { type: "Confectionery waste", classification: "Biodegradable - Compostable" };
     }
     
-    // Check if recyclable packaging
-    if (packaging.some((p: string) => p.includes("recyclable") || p.includes("plastic") || p.includes("paper") || p.includes("metal") || p.includes("glass"))) {
-      return "Recyclable";
+    return { type: "Mixed/Unknown contents", classification: "Check product label" };
+  };
+
+  const determinePackaging = (product: any): { material: string; disposal: string } => {
+    const packaging = product.packaging_tags || [];
+    const packagingStr = packaging.join(" ").toLowerCase();
+    const packagingText = product.packaging || "";
+    const combined = (packagingStr + " " + packagingText).toLowerCase();
+    
+    // Plastic packaging
+    if (combined.includes("plastic") || combined.includes("pp") || combined.includes("pet") || combined.includes("hdpe") || combined.includes("ldpe")) {
+      if (combined.includes("wrapper") || combined.includes("film") || combined.includes("bag")) {
+        return { material: "Plastic wrapper/film", disposal: "Recyclable" };
+      }
+      return { material: "Plastic container", disposal: "Recyclable" };
     }
     
-    return "E-Waste";
+    // Metal packaging
+    if (combined.includes("aluminium") || combined.includes("aluminum") || combined.includes("can") || combined.includes("metal") || combined.includes("tin")) {
+      return { material: "Metal/Aluminum can", disposal: "Recyclable" };
+    }
+    
+    // Glass packaging
+    if (combined.includes("glass") || combined.includes("bottle")) {
+      return { material: "Glass bottle/jar", disposal: "Recyclable" };
+    }
+    
+    // Paper/Cardboard packaging
+    if (combined.includes("cardboard") || combined.includes("paper") || combined.includes("carton")) {
+      return { material: "Paper/Cardboard", disposal: "Recyclable" };
+    }
+    
+    // Tetra pak / composite
+    if (combined.includes("tetra") || combined.includes("composite")) {
+      return { material: "Tetra Pak/Composite", disposal: "Recyclable" };
+    }
+    
+    return { material: "Mixed/Unknown material", disposal: "Recyclable" };
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -482,6 +558,36 @@ const BarcodeScanner = () => {
                     <p className="text-sm font-medium mb-1">Description</p>
                     <p className="text-sm text-muted-foreground">{productInfo.description}</p>
                   </div>
+
+                  {/* Inside Waste Type */}
+                  {productInfo.insideWaste && (
+                    <div className="p-3 rounded-lg bg-accent/50 border border-accent">
+                      <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                        <span className="text-lg">🍃</span> Inside Waste
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {productInfo.insideWaste.type}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {productInfo.insideWaste.classification}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Packaging Material */}
+                  {productInfo.packaging && (
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                        <span className="text-lg">📦</span> Packaging
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {productInfo.packaging.material}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Disposal: {productInfo.packaging.disposal}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">{productInfo.category}</Badge>
