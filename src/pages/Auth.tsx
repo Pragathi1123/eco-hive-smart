@@ -65,16 +65,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-animated p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 backdrop-blur-sm bg-card/95 hover-lift">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center">
-              <Leaf className="h-6 w-6 text-primary-foreground" />
+            <div className="h-16 w-16 rounded-2xl bg-gradient-candy flex items-center justify-center shadow-glow-pink animate-float">
+              <Leaf className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl">EcoTrack</CardTitle>
-          <CardDescription>Join the sustainable waste management revolution</CardDescription>
+          <CardTitle className="text-3xl text-gradient-rainbow font-bold">EcoTrack</CardTitle>
+          <CardDescription className="text-base">Join the sustainable waste management revolution</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
@@ -107,7 +107,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full bg-gradient-ocean hover:opacity-90 transition-opacity shadow-glow" disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
@@ -149,7 +149,7 @@ const Auth = () => {
                     minLength={6}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full bg-gradient-candy hover:opacity-90 transition-opacity shadow-glow-pink" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
