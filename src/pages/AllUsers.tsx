@@ -41,22 +41,21 @@ const AllUsers = () => {
     }
   };
 
-  // Generate a consistent avatar emoji based on name/email
-  const getAvatarEmoji = (name: string | null, email: string) => {
-    const avatarEmojis = [
-      "🦊", "🐼", "🦁", "🐯", "🐨", "🐸", "🦄", "🐙", 
-      "🦋", "🐢", "🦉", "🐝", "🦈", "🐳", "🦩", "🦜",
-      "🌻", "🌸", "🍀", "🌈", "⭐", "🌙", "🔥", "💎",
-      "🎯", "🎨", "🎭", "🎪", "🚀", "🌍", "☀️", "🌺"
-    ];
+  // Generate creative letter emoji based on first letter of name
+  const getLetterEmoji = (name: string | null, email: string) => {
+    const letterEmojis: Record<string, string> = {
+      'A': '🅰️', 'B': '🅱️', 'C': '©️', 'D': '🌀', 'E': '📧',
+      'F': '🎏', 'G': '🌀', 'H': '♓', 'I': 'ℹ️', 'J': '🎷',
+      'K': '🎋', 'L': '🛴', 'M': 'Ⓜ️', 'N': '♑', 'O': '⭕',
+      'P': '🅿️', 'Q': '🎯', 'R': '®️', 'S': '💲', 'T': '✝️',
+      'U': '⛎', 'V': '✅', 'W': '〰️', 'X': '❌', 'Y': '💴',
+      'Z': '💤'
+    };
     
-    const seed = (name || email).toLowerCase();
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % avatarEmojis.length;
-    return avatarEmojis[index];
+    const source = (name || email).trim().toUpperCase();
+    const firstLetter = source.charAt(0);
+    
+    return letterEmojis[firstLetter] || '🔤';
   };
 
   const getInitials = (name: string | null, email: string) => {
@@ -104,7 +103,7 @@ const AllUsers = () => {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-2xl">
-                      {getAvatarEmoji(user.full_name, user.email)}
+                      {getLetterEmoji(user.full_name, user.email)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
