@@ -41,6 +41,24 @@ const AllUsers = () => {
     }
   };
 
+  // Generate a consistent avatar emoji based on name/email
+  const getAvatarEmoji = (name: string | null, email: string) => {
+    const avatarEmojis = [
+      "🦊", "🐼", "🦁", "🐯", "🐨", "🐸", "🦄", "🐙", 
+      "🦋", "🐢", "🦉", "🐝", "🦈", "🐳", "🦩", "🦜",
+      "🌻", "🌸", "🍀", "🌈", "⭐", "🌙", "🔥", "💎",
+      "🎯", "🎨", "🎭", "🎪", "🚀", "🌍", "☀️", "🌺"
+    ];
+    
+    const seed = (name || email).toLowerCase();
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % avatarEmojis.length;
+    return avatarEmojis[index];
+  };
+
   const getInitials = (name: string | null, email: string) => {
     if (name) {
       return name
@@ -85,8 +103,8 @@ const AllUsers = () => {
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                      {getInitials(user.full_name, user.email)}
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-2xl">
+                      {getAvatarEmoji(user.full_name, user.email)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
